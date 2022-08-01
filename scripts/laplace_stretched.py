@@ -22,7 +22,7 @@ zf = zz.flatten()
 D2 = D @ D
 D2x = np.kron(np.eye(n + 1), D2)
 D2z = np.kron(D2, np.eye(n + 1))
-L = D2x + 4 * D2z
+L = D2x + 0.25 * D2z
 f = np.zeros((n + 1) ** 2)
 
 # Add the boundary conditions
