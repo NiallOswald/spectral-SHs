@@ -49,8 +49,6 @@ x_fine = np.linspace(-1, 1, 41)
 y_fine = x_fine
 xxx, yyy = np.meshgrid(x_fine, y_fine)
 uuu = sp.interp2d(xx, yy, uu, kind="cubic")(x_fine, y_fine)
-print(xxx.shape)
-print(uuu.shape)
 
 # Plot the solution
 fig = plt.figure(figsize=(8, 4))
