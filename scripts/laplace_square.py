@@ -52,7 +52,7 @@ uuu = sp.interp2d(xx, yy, uu, kind="cubic")(x_fine, y_fine)
 
 # Plot the solution
 fig = plt.figure(figsize=(8, 4))
-ax = fig.add_subplot(111, projection="3d")
+ax = fig.add_subplot(projection="3d")
 ax.plot_surface(xxx, yyy, uuu, rstride=1, cstride=1, cmap="viridis")
 ax.set_xlabel("x")
 ax.set_ylabel("y")
