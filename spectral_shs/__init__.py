@@ -1,1 +1,1 @@
-from .spectral import cheb  # noqa: D104,F401
+from .spectral import cheb, chebfft  # noqa: D104,F401
