@@ -42,13 +42,16 @@ f[: n + 1] = 1
 
 # Solve the linear system
 u = np.linalg.solve(L, f)
+print(u)
 uu = u.reshape((n + 1, n + 1))
 
 # Create a finer grid for plotting
 x_fine = np.linspace(-1, 1, 21)
 y_fine = np.linspace(-2, 2, 41)
 xxx, yyy = np.meshgrid(x_fine, y_fine)
-uuu = sp.interp2d(xx, zz, uu, kind="cubic")(x_fine, y_fine / 2)
+uuu = sp.griddata(
+    (xx.ravel(), zz.ravel()), uu.ravel(), (xxx, yyy / 2), method="cubic"
+)
 
 # Plot the solution
 fig = plt.figure(figsize=(8, 4))

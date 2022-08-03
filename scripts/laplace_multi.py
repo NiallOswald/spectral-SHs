@@ -1,6 +1,7 @@
 """Solving a Laplace problem by dividing the domain."""
 
 import numpy as np
+import scipy.interpolate as sp
 from spectral_shs import cheb
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
@@ -63,14 +64,18 @@ L = np.hstack((np.vstack((L1, A2)), np.vstack((A1, L2))))
 u = np.linalg.solve(L, f)
 uu = u.reshape((2 * (n + 1), n + 1))
 
-uu = np.delete(uu, n, axis=0)
-xx = np.delete(xx, n, axis=0)
-yy = np.delete(yy, n, axis=0)
+# Create a finer grid for plotting
+x_fine = np.linspace(-1, 1, 21)
+y_fine = np.linspace(-2, 2, 41)
+xxx, yyy = np.meshgrid(x_fine, y_fine)
+uuu = sp.griddata(
+    (xx.ravel(), yy.ravel()), uu.ravel(), (xxx, yyy), method="cubic"
+)
 
 # Plot the solution
 fig = plt.figure(figsize=(8, 4))
 ax = fig.add_subplot(projection="3d")
-ax.plot_surface(xx, yy, uu, rstride=1, cstride=1, cmap="viridis")
+ax.plot_surface(xxx, yyy, uuu, rstride=1, cstride=1, cmap="viridis")
 ax.set_xlabel("x")
 ax.set_ylabel("y")
 ax.set_zlabel("u")

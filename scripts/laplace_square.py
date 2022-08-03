@@ -48,7 +48,9 @@ uu = u.reshape((n + 1, n + 1))
 x_fine = np.linspace(-1, 1, 41)
 y_fine = x_fine
 xxx, yyy = np.meshgrid(x_fine, y_fine)
-uuu = sp.interp2d(xx, yy, uu, kind="cubic")(x_fine, y_fine)
+uuu = sp.griddata(
+    (xx.ravel(), yy.ravel()), uu.ravel(), (xxx, yyy), method="cubic"
+)
 
 # Plot the solution
 fig = plt.figure(figsize=(8, 4))
