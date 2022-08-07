@@ -42,7 +42,6 @@ f[: n + 1] = 1
 
 # Solve the linear system
 u = np.linalg.solve(L, f)
-print(u)
 uu = u.reshape((n + 1, n + 1))
 
 # Create a finer grid for plotting
@@ -62,5 +61,28 @@ ax.set_ylabel("y")
 ax.set_zlabel("u")
 ax.set_xlim(-1, 1)
 ax.set_ylim(-2, 2)
+
+plt.show()
+
+# Error analysis
+H = 4
+L = 2
+lam = (np.arange(1, 101) - 1 / 2) * np.pi / H
+u_exact = lambda x, y: 1 - np.sum(  # noqa: E731
+    np.sin(lam * H)
+    * np.cosh(lam * (x - 1))
+    * np.cos(lam * (y + 2))
+    / (2 * lam**2 * np.sinh(lam * L))
+)
+uu_exact = np.vectorize(u_exact)(xx, 2 * zz)
+
+fig = plt.figure(figsize=(8, 4))
+ax = fig.add_subplot(projection="3d")
+ax.plot_surface(
+    xx, 2 * zz, abs(uu - uu_exact), rstride=1, cstride=1, cmap="viridis"
+)
+ax.set_xlabel("x")
+ax.set_ylabel("y")
+ax.set_zlabel("error")
 
 plt.show()
