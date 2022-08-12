@@ -6,7 +6,7 @@ from spectral_shs import cheb
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 
-# Construct the differentiation matrix
+# Construct the differentiation matrices
 n = 10
 D, x = cheb(n)
 Dx = np.kron(np.eye(2 * n + 1), D)
