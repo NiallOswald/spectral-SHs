@@ -1,7 +1,6 @@
 """Find the flow of a channel with longitudinal grooves on both walls."""
 
 import numpy as np
-import scipy.interpolate as sp
 from spectral_shs import cheb
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
@@ -70,9 +69,9 @@ A1[n : (n + 1) ** 2 : n + 1, :] = -Dx[: (n + 1) ** 2 : n + 1, :]
 f[n : (n + 1) ** 2 : n + 1] = 0
 
 L2[: (n + 1) ** 2 : n + 1, :] = np.zeros((n + 1, (n + 1) ** 2))
-L2[: (n + 1) ** 2 : n + 1, : (n + 1) ** 2 : n + 1] = np.eye(n + 1, n + 1)
+L2[: (n + 1) ** 2 : n + 1, : (n + 1) ** 2 : n + 1] = np.eye(n + 1)
 A2 = np.zeros(((n + 1) ** 2, (n + 1) ** 2))
-A2[: (n + 1) ** 2 : n + 1, n : (n + 1) ** 2 : n + 1] = -np.eye(n + 1, n + 1)
+A2[: (n + 1) ** 2 : n + 1, n : (n + 1) ** 2 : n + 1] = -np.eye(n + 1)
 f[(n + 1) ** 2 : 2 * (n + 1) ** 2 : n + 1] = 0
 
 L = np.block([[L1, A1], [A2, L2]])
@@ -89,7 +88,7 @@ ax.plot_surface(xx_std, yy_std, uu_std, rstride=1, cstride=1, cmap="viridis")
 ax.set_xlabel("$x$")
 ax.set_ylabel("$y$")
 ax.set_zlabel("$u$")
-ax.set_xlim(-L / 2, 0)
-ax.set_ylim(0, 1)
+# ax.set_xlim(-L / 2, 0)
+# ax.set_ylim(0, 1)
 
 plt.show()
