@@ -82,12 +82,6 @@ u = np.linalg.solve(L, f)
 uu = u.reshape((2 * (n + 1), n + 1))
 uu_std = np.hstack((uu[: n + 1, :], uu[n + 1 :, :]))
 
-# Create a finer grid for plotting
-x_fine = np.linspace(-L / 2, 0, 41)
-y_fine = np.linspace(0, 1, 21)
-xxx, yyy = np.meshgrid(x_fine, y_fine)
-# uuu = sp.griddata((xf, yf), u, (xxx, yyy), method="cubic")
-
 # Plot the solution
 fig = plt.figure(figsize=(6, 6))
 ax = fig.add_subplot(projection="3d")
@@ -95,7 +89,7 @@ ax.plot_surface(xx_std, yy_std, uu_std, rstride=1, cstride=1, cmap="viridis")
 ax.set_xlabel("$x$")
 ax.set_ylabel("$y$")
 ax.set_zlabel("$u$")
-# ax.set_xlim(-L / 2, 0)
-# ax.set_ylim(0, 1)
+ax.set_xlim(-L / 2, 0)
+ax.set_ylim(0, 1)
 
 plt.show()
