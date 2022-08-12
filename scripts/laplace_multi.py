@@ -15,8 +15,6 @@ Dy = np.kron(D, np.eye(n + 1))
 # Construct the grid of points
 y = np.concatenate((x + 1, x - 1))
 xx, yy = np.meshgrid(x, y)
-xf = xx.flatten()
-yf = yy.flatten()
 
 # Construct the Laplace operators for each domain
 D2 = D @ D
