@@ -1,2 +1,2 @@
 # spectral-SHs
-Investigating Superhydrophobic surfaces using spectral methods as a UROP project with Dr Michael Mayer
+Investigating the effect of surfactants on superhydrophobic surfaces using spectral methods as a UROP project with Dr Michael Mayer.
