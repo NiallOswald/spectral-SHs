@@ -9,8 +9,8 @@ from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 # Construct the differentiation matrices
 n = 10
 D, x = cheb(n)
-Dx = np.kron(np.eye(2 * n + 1), D)
 D_double, z = cheb(2 * n)
+Dx = np.kron(np.eye(2 * n + 1), D)
 Dz = np.kron(D_double, np.eye(n + 1))
 
 # Construct the grid of points
@@ -27,19 +27,19 @@ L = D2x + 0.25 * D2z
 f = np.zeros((n + 1) * (2 * n + 1))
 
 # Add the boundary conditions
-L[np.arange(0, (n + 1) * (2 * n + 1), n + 1), :] = Dx[
-    np.arange(0, (n + 1) * (2 * n + 1), n + 1), :
+L[: (n + 1) * (2 * n + 1) : n + 1, :] = Dx[
+    : (n + 1) * (2 * n + 1) : n + 1, :
 ]  # Neumann x = 1
 
-L[np.arange(n, (n + 1) * (2 * n + 1), n + 1), :] = Dx[
-    np.arange(n, (n + 1) * (2 * n + 1), n + 1), :
+L[n : (n + 1) * (2 * n + 1) : n + 1, :] = Dx[
+    n : (n + 1) * (2 * n + 1) : n + 1, :
 ]  # Neumann x = -1
-f[np.arange(n, (n + 1) * (2 * n + 1), n + 1)] = 1
+f[n : (n + 1) * (2 * n + 1) : n + 1] = 1
 
-L[(n + 1) * 2 * n :, :] = Dz[(n + 1) * 2 * n :, :]  # Neumann y = -1
+L[2 * n * (n + 1) :, :] = Dz[2 * n * (n + 1) :, :]  # Neumann y = -2
 
-L[: 2 * n + 1, :] = np.eye(2 * n + 1, (n + 1) * (2 * n + 1))  # Dirichlet y = 1
-f[: 2 * n + 1] = 1
+L[: n + 1, :] = np.eye(n + 1, (n + 1) * (2 * n + 1))  # Dirichlet y = 2
+f[: n + 1] = 1
 
 # Solve the linear system
 u = np.linalg.solve(L, f)
