@@ -12,6 +12,7 @@ e = 1
 
 L = E / H
 l = e / H  # noqa: E741
+delta = e / E
 
 # Construct the differentiation matrices
 n = 10
