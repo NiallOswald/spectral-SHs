@@ -97,7 +97,7 @@ uu_exact = np.vectorize(u_exact)(xx, yy)
 fig = plt.figure(figsize=(8, 4))
 ax = fig.add_subplot(projection="3d")
 ax.plot_surface(
-    xx, yy, abs(uu / uu_exact - 1), rstride=1, cstride=1, cmap="viridis"
+    xx, yy, abs(uu - uu_exact), rstride=1, cstride=1, cmap="viridis"
 )
 ax.set_xlabel("x")
 ax.set_ylabel("y")
