@@ -22,7 +22,7 @@ Dy = np.kron(D, np.eye(n + 1))
 
 # Construct the grid of points
 x = np.concatenate((l / 4 * (c - 1), ((L - l) * c - l - L) / 4))
-y = (c + 1) / 2
+y = c
 xx_std, yy_std = np.meshgrid(x, y)
 
 xx = np.vstack((xx_std[:, : n + 1], xx_std[:, n + 1 :]))
@@ -35,8 +35,8 @@ yf = yy.flatten()
 D2 = D @ D
 D2x = np.kron(np.eye(n + 1), D2)
 D2y = np.kron(D2, np.eye(n + 1))
-L1 = 16 / l**2 * D2x + 4 * D2y
-L2 = 16 / (L - l) ** 2 * D2x + 4 * D2y
+L1 = 16 / l**2 * D2x + D2y
+L2 = 16 / (L - l) ** 2 * D2x + D2y
 f = -np.ones(2 * (n + 1) ** 2)
 
 # First domain boundary conditions
@@ -45,7 +45,7 @@ f[: n + 1] = 0
 
 L1[(n + 1) * n :, :] = np.zeros(
     (n + 1, (n + 1) ** 2)
-)  # No-slip y = 0, eta = -1
+)  # No-slip y = -1, eta = -1
 L1[(n + 1) * n :, (n + 1) * n :] = np.eye(n + 1)
 f[(n + 1) * n : (n + 1) ** 2] = 0
 
@@ -60,7 +60,7 @@ f[(n + 1) ** 2 : (n + 1) * (n + 2)] = 0
 
 L2[(n + 1) * n :, :] = np.zeros(
     (n + 1, (n + 1) ** 2)
-)  # No-slip y = 0, eta = -1
+)  # No-slip y = -1, eta = -1
 L2[(n + 1) * n :, (n + 1) * n :] = np.eye(n + 1)
 f[(n + 1) * (2 * n + 1) :] = 0
 
