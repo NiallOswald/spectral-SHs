@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 
 # Setting parameters
-H = 2
+H = 1
 E = 2
-e = 1
+e = 1.5
 
 L = E / H
 l = e / H  # noqa: E741
