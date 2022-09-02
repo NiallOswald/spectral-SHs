@@ -17,8 +17,6 @@ delta = e / E
 # Construct the differentiation matrices
 n = 10
 D, c = cheb(n)
-Dx = np.kron(np.eye(n + 1), D)
-Dy = np.kron(D, np.eye(n + 1))
 
 # Construct the grid of points
 x = np.concatenate((l / 4 * (c - 1), ((L - l) * c - l - L) / 4))
@@ -31,89 +29,67 @@ yy = np.vstack((yy_std[:, : n + 1], yy_std[:, n + 1 :]))
 xf = xx.flatten()
 yf = yy.flatten()
 
-# Construct the operators for each domain
+# Construct the relevant operators
+Dx = np.kron(np.eye(n + 1), D)
+Dy = np.kron(D, np.eye(n + 1))
+
+Dxy = Dx @ Dy
+
 D2 = D @ D
 D2x = np.kron(np.eye(n + 1), D2)
 D2y = np.kron(D2, np.eye(n + 1))
 
-# Solving for the x component of the velocity (u)
-L1 = 16 / l**2 * D2x + 4 * D2y
-L2 = 16 / (L - l) ** 2 * D2x + 4 * D2y
-f = -np.ones(2 * (n + 1) ** 2)
+D2x2y = D2x @ D2y
 
-# First domain u boundary conditions
-L1[: n + 1, :] = Dy[: n + 1, :]  # Interface y = 1, eta = 1
-f[: n + 1] = 0
+D4 = D2 @ D2
+D4x = np.kron(np.eye(n + 1), D4)
+D4y = np.kron(D4, np.eye(n + 1))
 
-L1[(n + 1) * n :, :] = Dy[(n + 1) * n :, :]  # Symmetry y = 0, eta = -1
-f[(n + 1) * n : (n + 1) ** 2] = 0
+L1 = (4 / l) ** 4 * D4x + (4 / l) ** 2 * 2**2 * D2x2y + 2**4 * D4y
+L2 = (
+    (4 / (L - l)) ** 4 * D4x
+    + (4 / (L - l)) ** 2
+    + 2**2 * D2x2y
+    + (2**4) * D4y
+)
 
-L1[: (n + 1) ** 2 : n + 1, :] = Dx[
-    : (n + 1) ** 2 : n + 1, :
-]  # Symmetry x = 0, xi = 1
-f[: (n + 1) ** 2 : n + 1] = 0
-
-# Second domain u boundary conditions
-L2[: n + 1, :] = np.eye(n + 1, (n + 1) ** 2)  # No-slip y = 1, eta = 1
-f[(n + 1) ** 2 : (n + 1) * (n + 2)] = 0
-
-L2[(n + 1) * n :, :] = Dy[(n + 1) * n :, :]  # Symmetry y = 0, eta = -1
-f[(n + 1) * (2 * n + 1) :] = 0
-
-L2[n : (n + 1) ** 2 : n + 1, :] = Dx[
-    n : (n + 1) ** 2 : n + 1, :
-]  # Symmetry x = -L/2, xi = -1
-f[(n + 1) ** 2 + n :: n + 1] = 0
-
-# Add constraints to link the domains
-L1[n : (n + 1) ** 2 : n + 1, :] = Dx[n : (n + 1) ** 2 : n + 1, :]
-A1 = np.zeros(((n + 1) ** 2, (n + 1) ** 2))
-A1[n : (n + 1) ** 2 : n + 1, :] = -Dx[: (n + 1) ** 2 : n + 1, :]
-f[n : (n + 1) ** 2 : n + 1] = 0
-
-L2[: (n + 1) ** 2 : n + 1, :] = np.zeros((n + 1, (n + 1) ** 2))
-L2[: (n + 1) ** 2 : n + 1, : (n + 1) ** 2 : n + 1] = np.eye(n + 1)
-A2 = np.zeros(((n + 1) ** 2, (n + 1) ** 2))
-A2[: (n + 1) ** 2 : n + 1, n : (n + 1) ** 2 : n + 1] = -np.eye(n + 1)
-f[(n + 1) ** 2 : 2 * (n + 1) ** 2 : n + 1] = 0
-
-Lu = np.block([[L1, A1], [A2, L2]])
-
-# Solve the linear system
-u = np.linalg.solve(Lu, f)
-uu = u.reshape((2 * (n + 1), n + 1))
-uu_std = np.hstack((uu[: n + 1, :], uu[n + 1 :, :]))
-
-# Solving for the y component of the velocity (v)
-L1 = 16 / l**2 * D2x + 4 * D2y
-L2 = 16 / (L - l) ** 2 * D2x + 4 * D2y
 f = np.zeros(2 * (n + 1) ** 2)
 
-# First domain v boundary conditions
-L1[: n + 1, :] = Dx[: n + 1, :]  # Interface y = 1, eta = 1
-f[: n + 1] = 0
-
-L1[(n + 1) * n :, :] = 0  # No symmetry flow y = 0, eta = -1
-L1[(n + 1) * n :, (n + 1) * n :] = np.eye(n + 1)
-f[(n + 1) * n : (n + 1) ** 2] = 0
-
-L1[: (n + 1) ** 2 : n + 1, :] = Dx[
+# First domain boundary conditions
+L1[: (n + 1) ** 2 : n + 1, :] = D2x[
     : (n + 1) ** 2 : n + 1, :
 ]  # Symmetry x = 0, xi = 1
 f[: (n + 1) ** 2 : n + 1] = 0
+L1[1 : (n + 1) ** 2 : n + 1, :] = Dxy[: (n + 1) ** 2 : n + 1, :]
+f[1 : (n + 1) ** 2 : n + 1] = 0
 
-# Second domain v boundary conditions
-L2[: n + 1, :] = np.eye(n + 1, (n + 1) ** 2)  # No slip y = 1, eta = 1
-f[(n + 1) ** 2 : (n + 1) * (n + 2)] = 0
+L1[: n + 1, :] = np.eye(n + 1, (n + 1) ** 2)  # Interface y = 1, eta = 1
+f[: n + 1] = 1
+L1[n + 1 : 2 * (n + 1), :] = D2y[: n + 1 :]
+f[n + 1 : 2 * (n + 1)] = 0
 
-L2[(n + 1) * n :, :] = 0  # No symmetry flow y = 0, eta = -1
-L2[(n + 1) * n :, (n + 1) * n :] = np.eye(n + 1)
-f[(n + 1) * (2 * n + 1) :] = 0
+L1[(n + 1) * n :, :] = Dxy[(n + 1) * n :, :]  # Symmetry y = 0, eta = -1
+f[(n + 1) * n : (n + 1) ** 2] = 0
+L1[(n + 1) * (n - 1) : (n + 1) * n, :] = D2y[(n + 1) * n :, :]
+f[(n + 1) * (n - 1) : (n + 1) * n] = 0
 
-L2[n : (n + 1) ** 2 : n + 1, :] = Dx[
+# Second domain boundary conditions
+L2[n : (n + 1) ** 2 : n + 1, :] = D2x[
     n : (n + 1) ** 2 : n + 1, :
 ]  # Symmetry x = -L/2, xi = -1
 f[(n + 1) ** 2 + n :: n + 1] = 0
+L2[n - 1 : (n + 1) ** 2 : n + 1, :] = Dxy[n : (n + 1) ** 2 : n + 1, :]
+f[(n + 1) ** 2 + n - 1 :: n + 1] = 0
+
+L2[: n + 1, :] = np.eye(n + 1, (n + 1) ** 2)  # No-slip y = 1, eta = 1
+f[(n + 1) ** 2 : (n + 1) * (n + 2)] = 1
+L2[n + 1 : 2 * (n + 1), :] = Dy[: n + 1, :]
+f[(n + 1) * (n + 2) : (n + 1) * (n + 3)] = 0
+
+L2[(n + 1) * n :, :] = Dxy[(n + 1) * n :, :]  # Symmetry y = 0, eta = -1
+f[(n + 1) * (2 * n + 1) :] = 0
+L2[(n + 1) * (n - 1) : (n + 1) * n, :] = D2y[(n + 1) * n :, :]
+f[(n + 1) * 2 * n : (n + 1) * (2 * n + 1)] = 0
 
 # Add constraints to link the domains
 L1[n : (n + 1) ** 2 : n + 1, :] = Dx[n : (n + 1) ** 2 : n + 1, :]
@@ -121,30 +97,52 @@ A1 = np.zeros(((n + 1) ** 2, (n + 1) ** 2))
 A1[n : (n + 1) ** 2 : n + 1, :] = -Dx[: (n + 1) ** 2 : n + 1, :]
 f[n : (n + 1) ** 2 : n + 1] = 0
 
-L2[: (n + 1) ** 2 : n + 1, :] = np.zeros((n + 1, (n + 1) ** 2))
+L2[: (n + 1) ** 2 : n + 1, :] = 0
 L2[: (n + 1) ** 2 : n + 1, : (n + 1) ** 2 : n + 1] = np.eye(n + 1)
 A2 = np.zeros(((n + 1) ** 2, (n + 1) ** 2))
 A2[: (n + 1) ** 2 : n + 1, n : (n + 1) ** 2 : n + 1] = -np.eye(n + 1)
 f[(n + 1) ** 2 : 2 * (n + 1) ** 2 : n + 1] = 0
 
-Lv = np.block([[L1, A1], [A2, L2]])
+# Solve the system
+L = np.block([[L1, A1], [A2, L2]])
+psi = np.linalg.solve(L, f)
 
-# Solve the linear system
-v = np.linalg.solve(Lv, f)
+# Convert streamfunction to velocities
+u = np.concatenate([Dy @ psi[: (n + 1) ** 2], Dy @ psi[(n + 1) ** 2 :]])
+v = np.concatenate([-Dx @ psi[: (n + 1) ** 2], -Dx @ psi[(n + 1) ** 2 :]])
+
+# Reshape to get solution grids
+uu = u.reshape((2 * (n + 1), n + 1))
 vv = v.reshape((2 * (n + 1), n + 1))
+psi = psi.reshape((2 * (n + 1), n + 1))
+uu_std = np.hstack((uu[: n + 1, :], uu[n + 1 :, :]))
 vv_std = np.hstack((vv[: n + 1, :], vv[n + 1 :, :]))
+psi_std = np.hstack((psi[: n + 1, :], psi[n + 1 :, :]))
 
 # Plot the solution
 fig, ax = plt.subplots(figsize=(6, 6))
 plt.quiver(xx_std, yy_std, uu_std, vv_std, scale_units="xy")
+plt.xlabel("x")
+plt.ylabel("y")
+plt.title("Velocity field")
 plt.show()
 
 # Plot u surface
 fig = plt.figure(figsize=(6, 6))
 ax = fig.add_subplot(projection="3d")
-ax.plot_surface(uu_std, xx_std, yy_std, rstride=1, cstride=1, cmap="viridis")
-ax.set_xlabel("$u$")
-ax.set_ylabel("$x$")
-ax.set_zlabel("$y$")
+ax.plot_surface(xx_std, yy_std, uu_std, rstride=1, cstride=1, cmap="viridis")
+ax.set_xlabel("$x$")
+ax.set_ylabel("$y$")
+ax.set_zlabel("$u$")
+
+plt.show()
+
+# Plot v surface
+fig = plt.figure(figsize=(6, 6))
+ax = fig.add_subplot(projection="3d")
+ax.plot_surface(xx_std, yy_std, vv_std, rstride=1, cstride=1, cmap="viridis")
+ax.set_xlabel("$x$")
+ax.set_ylabel("$y$")
+ax.set_zlabel("$v$")
 
 plt.show()
