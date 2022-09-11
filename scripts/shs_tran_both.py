@@ -33,8 +33,6 @@ yf = yy.flatten()
 Dx = np.kron(np.eye(n + 1), D)
 Dy = np.kron(D, np.eye(n + 1))
 
-Dxy = Dx @ Dy
-
 D2 = D @ D
 D2x = np.kron(np.eye(n + 1), D2)
 D2y = np.kron(D2, np.eye(n + 1))
@@ -45,71 +43,82 @@ D4 = D2 @ D2
 D4x = np.kron(np.eye(n + 1), D4)
 D4y = np.kron(D4, np.eye(n + 1))
 
-L1 = (4 / l) ** 4 * D4x + (4 / l) ** 2 * 2**2 * D2x2y + 2**4 * D4y
+L1 = (4 / l) ** 4 * D4x + 2 * (4 / l) ** 2 * 2**2 * D2x2y + 2**4 * D4y
 L2 = (
     (4 / (L - l)) ** 4 * D4x
-    + (4 / (L - l)) ** 2
-    + 2**2 * D2x2y
-    + (2**4) * D4y
+    + 2 * (4 / (L - l)) ** 2 * 2**2 * D2x2y
+    + 2**4 * D4y
 )
 
 f = np.zeros(2 * (n + 1) ** 2)
 
 # First domain boundary conditions
-L1[: (n + 1) ** 2 : n + 1, :] = D2x[
-    : (n + 1) ** 2 : n + 1, :
-]  # Symmetry x = 0, xi = 1
+L1[:: n + 1, :] = D2x[:: n + 1, :]  # Symmetry x = 0, xi = 1
 f[: (n + 1) ** 2 : n + 1] = 0
-L1[1 : (n + 1) ** 2 : n + 1, :] = Dxy[: (n + 1) ** 2 : n + 1, :]
-f[1 : (n + 1) ** 2 : n + 1] = 0
+L1[1 :: n + 1, :] = Dy[:: n + 1, :]
+f[1 : (n + 1) ** 2 : n + 1] = ((c + 1) ** 2 - 4) / 16
 
 L1[: n + 1, :] = np.eye(n + 1, (n + 1) ** 2)  # Interface y = 1, eta = 1
-f[: n + 1] = 1
-L1[n + 1 : 2 * (n + 1), :] = D2y[: n + 1 :]
-f[n + 1 : 2 * (n + 1)] = 0
+f[: n + 1] = 0
+L1[n + 1 : 2 * (n + 1), :] = D2y[: n + 1, :]
+f[n + 1 : 2 * (n + 1)] = 1 / 4
 
-L1[(n + 1) * n :, :] = Dxy[(n + 1) * n :, :]  # Symmetry y = 0, eta = -1
+L1[(n + 1) * n :, :] = Dx[(n + 1) * n :, :]  # Symmetry y = 0, eta = -1
 f[(n + 1) * n : (n + 1) ** 2] = 0
 L1[(n + 1) * (n - 1) : (n + 1) * n, :] = D2y[(n + 1) * n :, :]
 f[(n + 1) * (n - 1) : (n + 1) * n] = 0
 
 # Second domain boundary conditions
-L2[n : (n + 1) ** 2 : n + 1, :] = D2x[
-    n : (n + 1) ** 2 : n + 1, :
-]  # Symmetry x = -L/2, xi = -1
+L2[n :: n + 1, :] = D2x[n :: n + 1, :]  # Symmetry x = -L/2, xi = -1
 f[(n + 1) ** 2 + n :: n + 1] = 0
-L2[n - 1 : (n + 1) ** 2 : n + 1, :] = Dxy[n : (n + 1) ** 2 : n + 1, :]
-f[(n + 1) ** 2 + n - 1 :: n + 1] = 0
+L2[n - 1 :: n + 1, :] = Dy[n :: n + 1, :]
+f[(n + 1) ** 2 + n - 1 :: n + 1] = ((c + 1) ** 2 - 4) / 16
 
 L2[: n + 1, :] = np.eye(n + 1, (n + 1) ** 2)  # No-slip y = 1, eta = 1
-f[(n + 1) ** 2 : (n + 1) * (n + 2)] = 1
+f[(n + 1) ** 2 : (n + 1) * (n + 2)] = 0
 L2[n + 1 : 2 * (n + 1), :] = Dy[: n + 1, :]
 f[(n + 1) * (n + 2) : (n + 1) * (n + 3)] = 0
 
-L2[(n + 1) * n :, :] = Dxy[(n + 1) * n :, :]  # Symmetry y = 0, eta = -1
+L2[(n + 1) * n :, :] = Dx[(n + 1) * n :, :]  # Symmetry y = 0, eta = -1
 f[(n + 1) * (2 * n + 1) :] = 0
 L2[(n + 1) * (n - 1) : (n + 1) * n, :] = D2y[(n + 1) * n :, :]
 f[(n + 1) * 2 * n : (n + 1) * (2 * n + 1)] = 0
 
 # Add constraints to link the domains
-L1[n : (n + 1) ** 2 : n + 1, :] = Dx[n : (n + 1) ** 2 : n + 1, :]
 A1 = np.zeros(((n + 1) ** 2, (n + 1) ** 2))
-A1[n : (n + 1) ** 2 : n + 1, :] = -Dx[: (n + 1) ** 2 : n + 1, :]
+A2 = np.zeros(((n + 1) ** 2, (n + 1) ** 2))
+
+L1[n :: n + 1, :] = (1 / l) * Dx[n :: n + 1, :]
+A1[n :: n + 1, :] = -(1 / (L - l)) * Dx[:: n + 1, :]
 f[n : (n + 1) ** 2 : n + 1] = 0
 
-L2[: (n + 1) ** 2 : n + 1, :] = 0
-L2[: (n + 1) ** 2 : n + 1, : (n + 1) ** 2 : n + 1] = np.eye(n + 1)
-A2 = np.zeros(((n + 1) ** 2, (n + 1) ** 2))
-A2[: (n + 1) ** 2 : n + 1, n : (n + 1) ** 2 : n + 1] = -np.eye(n + 1)
-f[(n + 1) ** 2 : 2 * (n + 1) ** 2 : n + 1] = 0
+L2[:: n + 1, :] = Dy[:: n + 1, :]
+A2[:: n + 1, :] = -Dy[n :: n + 1, :]
+f[(n + 1) ** 2 :: n + 1] = 0
+
+# L2[1 :: n + 1, :] = 0
+# L2[1 :: n + 1, :: n + 1] = np.eye(n + 1)
+# A2[1 :: n + 1, :] = 0
+# A2[1 :: n + 1, n :: n + 1] = -np.eye(n + 1)
+# f[(n + 1) ** 2 + 1 :: n + 1] = 0
 
 # Solve the system
-L = np.block([[L1, A1], [A2, L2]])
-psi = np.linalg.solve(L, f)
+L_complete = np.block([[L1, A1], [A2, L2]])
+psi = np.linalg.solve(L_complete, f)
+
+plt.spy(L_complete)
+plt.show()
 
 # Convert streamfunction to velocities
-u = np.concatenate([Dy @ psi[: (n + 1) ** 2], Dy @ psi[(n + 1) ** 2 :]])
-v = np.concatenate([-Dx @ psi[: (n + 1) ** 2], -Dx @ psi[(n + 1) ** 2 :]])
+u = np.concatenate(
+    [2 * Dy @ psi[: (n + 1) ** 2], 2 * Dy @ psi[(n + 1) ** 2 :]]
+)
+v = np.concatenate(
+    [
+        -(4 / l) * Dx @ psi[: (n + 1) ** 2],
+        -(4 / (L - l)) * Dx @ psi[(n + 1) ** 2 :],
+    ]
+)
 
 # Reshape to get solution grids
 uu = u.reshape((2 * (n + 1), n + 1))
@@ -144,5 +153,25 @@ ax.plot_surface(xx_std, yy_std, vv_std, rstride=1, cstride=1, cmap="viridis")
 ax.set_xlabel("$x$")
 ax.set_ylabel("$y$")
 ax.set_zlabel("$v$")
+
+plt.show()
+
+# Plot u surface as in Teo, Khoo
+fig = plt.figure(figsize=(6, 6))
+ax = fig.add_subplot(projection="3d")
+ax.plot_surface(uu_std, xx_std, yy_std, rstride=1, cstride=1, cmap="viridis")
+ax.set_xlabel("$u$")
+ax.set_ylabel("$x$")
+ax.set_zlabel("$y$")
+
+plt.show()
+
+# Plot phi surface
+fig = plt.figure(figsize=(6, 6))
+ax = fig.add_subplot(projection="3d")
+ax.plot_surface(xx_std, yy_std, psi_std, rstride=1, cstride=1, cmap="viridis")
+ax.set_xlabel("$x$")
+ax.set_ylabel("$y$")
+ax.set_zlabel("$\\phi$")
 
 plt.show()
