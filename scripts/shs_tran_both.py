@@ -52,38 +52,6 @@ L2 = (
 
 f = np.zeros(2 * (n + 1) ** 2)
 
-# First domain boundary conditions
-L1[:: n + 1, :] = D2x[:: n + 1, :]  # Symmetry x = 0, xi = 1
-f[: (n + 1) ** 2 : n + 1] = 0
-L1[1 :: n + 1, :] = Dy[:: n + 1, :]
-f[1 : (n + 1) ** 2 : n + 1] = ((c + 1) ** 2 - 4) / 16
-
-L1[: n + 1, :] = np.eye(n + 1, (n + 1) ** 2)  # Interface y = 1, eta = 1
-f[: n + 1] = 0
-L1[n + 1 : 2 * (n + 1), :] = D2y[: n + 1, :]
-f[n + 1 : 2 * (n + 1)] = 1 / 4
-
-L1[(n + 1) * n :, :] = Dx[(n + 1) * n :, :]  # Symmetry y = 0, eta = -1
-f[(n + 1) * n : (n + 1) ** 2] = 0
-L1[(n + 1) * (n - 1) : (n + 1) * n, :] = D2y[(n + 1) * n :, :]
-f[(n + 1) * (n - 1) : (n + 1) * n] = 0
-
-# Second domain boundary conditions
-L2[n :: n + 1, :] = D2x[n :: n + 1, :]  # Symmetry x = -L/2, xi = -1
-f[(n + 1) ** 2 + n :: n + 1] = 0
-L2[n - 1 :: n + 1, :] = Dy[n :: n + 1, :]
-f[(n + 1) ** 2 + n - 1 :: n + 1] = ((c + 1) ** 2 - 4) / 16
-
-L2[: n + 1, :] = np.eye(n + 1, (n + 1) ** 2)  # No-slip y = 1, eta = 1
-f[(n + 1) ** 2 : (n + 1) * (n + 2)] = 0
-L2[n + 1 : 2 * (n + 1), :] = Dy[: n + 1, :]
-f[(n + 1) * (n + 2) : (n + 1) * (n + 3)] = 0
-
-L2[(n + 1) * n :, :] = Dx[(n + 1) * n :, :]  # Symmetry y = 0, eta = -1
-f[(n + 1) * (2 * n + 1) :] = 0
-L2[(n + 1) * (n - 1) : (n + 1) * n, :] = D2y[(n + 1) * n :, :]
-f[(n + 1) * 2 * n : (n + 1) * (2 * n + 1)] = 0
-
 # Add constraints to link the domains
 A1 = np.zeros(((n + 1) ** 2, (n + 1) ** 2))
 A2 = np.zeros(((n + 1) ** 2, (n + 1) ** 2))
@@ -101,6 +69,50 @@ f[(n + 1) ** 2 :: n + 1] = 0
 # A2[1 :: n + 1, :] = 0
 # A2[1 :: n + 1, n :: n + 1] = -np.eye(n + 1)
 # f[(n + 1) ** 2 + 1 :: n + 1] = 0
+
+# First domain boundary conditions
+L1[:: n + 1, :] = D2x[:: n + 1, :]  # Symmetry x = 0, xi = 1
+A1[:: n + 1, :] = 0
+f[: (n + 1) ** 2 : n + 1] = 0
+L1[1 :: n + 1, :] = Dy[:: n + 1, :]
+A1[1 :: n + 1, :] = 0
+f[1 : (n + 1) ** 2 : n + 1] = 0  # ((c + 1) ** 2 - 4) / 16
+
+L1[: n + 1, :] = np.eye(n + 1, (n + 1) ** 2)  # Interface y = 1, eta = 1
+A1[: n + 1, :] = 0
+f[: n + 1] = 0
+L1[n + 1 : 2 * (n + 1), :] = D2y[: n + 1, :]
+A1[n + 1 : 2 * (n + 1), :] = 0
+f[n + 1 : 2 * (n + 1)] = 1 / 4
+
+L1[(n + 1) * n :, :] = Dx[(n + 1) * n :, :]  # Symmetry y = 0, eta = -1
+A1[(n + 1) * n :, :] = 0
+f[(n + 1) * n : (n + 1) ** 2] = 0
+L1[(n + 1) * (n - 1) : (n + 1) * n, :] = D2y[(n + 1) * n :, :]
+A1[(n + 1) * (n - 1) : (n + 1) * n, :] = 0
+f[(n + 1) * (n - 1) : (n + 1) * n] = 0
+
+# Second domain boundary conditions
+L2[n :: n + 1, :] = D2x[n :: n + 1, :]  # Symmetry x = -L/2, xi = -1
+A2[n :: n + 1, :] = 0
+f[(n + 1) ** 2 + n :: n + 1] = 0
+L2[n - 1 :: n + 1, :] = Dy[n :: n + 1, :]
+A2[n - 1 :: n + 1, :] = 0
+f[(n + 1) ** 2 + n - 1 :: n + 1] = 0  # ((c + 1) ** 2 - 4) / 16
+
+L2[: n + 1, :] = np.eye(n + 1, (n + 1) ** 2)  # No-slip y = 1, eta = 1
+A2[: n + 1, :] = 0
+f[(n + 1) ** 2 : (n + 1) * (n + 2)] = 0
+L2[n + 1 : 2 * (n + 1), :] = Dy[: n + 1, :]
+A2[n + 1 : 2 * (n + 1), :] = 0
+f[(n + 1) * (n + 2) : (n + 1) * (n + 3)] = 0
+
+L2[(n + 1) * n :, :] = Dx[(n + 1) * n :, :]  # Symmetry y = 0, eta = -1
+A2[(n + 1) * n :, :] = 0
+f[(n + 1) * (2 * n + 1) :] = 0
+L2[(n + 1) * (n - 1) : (n + 1) * n, :] = D2y[(n + 1) * n :, :]
+A2[(n + 1) * (n - 1) : (n + 1) * n, :] = 0
+f[(n + 1) * 2 * n : (n + 1) * (2 * n + 1)] = 0
 
 # Solve the system
 L_complete = np.block([[L1, A1], [A2, L2]])
