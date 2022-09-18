@@ -6,20 +6,21 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 
 # Setting parameters
-H = 1
 E = 2
 e = 1.5
 
+H = 1
 L = E / H
 l = e / H  # noqa: E741
 delta = e / E
 
 # Construct the differentiation matrices
 n = 10
+block_len = (n + 1) ** 2
 D, c = cheb(n)
 
 # Construct the grid of points
-x = np.concatenate((l / 4 * (c - 1), ((L - l) * c - l - L) / 4))
+x = np.concatenate(((l / 4) * (c - 1), ((L - l) * c - (L + l)) / 4))
 y = (c + 1) / 2
 xx_std, yy_std = np.meshgrid(x, y)
 
@@ -32,6 +33,8 @@ yf = yy.flatten()
 # Construct the relevant operators
 Dx = np.kron(np.eye(n + 1), D)
 Dy = np.kron(D, np.eye(n + 1))
+
+Dxy = Dx @ Dy
 
 D2 = D @ D
 D2x = np.kron(np.eye(n + 1), D2)
@@ -50,90 +53,108 @@ L2 = (
     + 2**4 * D4y
 )
 
-f = np.zeros(2 * (n + 1) ** 2)
+A1 = np.zeros((block_len, block_len))
+A2 = np.zeros((block_len, block_len))
 
-# Add constraints to link the domains
-A1 = np.zeros(((n + 1) ** 2, (n + 1) ** 2))
-A2 = np.zeros(((n + 1) ** 2, (n + 1) ** 2))
+f1 = np.zeros(block_len)
+f2 = f1.copy()
 
-L1[n :: n + 1, :] = (1 / l) * Dx[n :: n + 1, :]
-A1[n :: n + 1, :] = -(1 / (L - l)) * Dx[:: n + 1, :]
-f[n : (n + 1) ** 2 : n + 1] = 0
-
-L2[:: n + 1, :] = Dy[:: n + 1, :]
-A2[:: n + 1, :] = -Dy[n :: n + 1, :]
-f[(n + 1) ** 2 :: n + 1] = 0
-
-# L2[1 :: n + 1, :] = 0
-# L2[1 :: n + 1, :: n + 1] = np.eye(n + 1)
-# A2[1 :: n + 1, :] = 0
-# A2[1 :: n + 1, n :: n + 1] = -np.eye(n + 1)
-# f[(n + 1) ** 2 + 1 :: n + 1] = 0
-
+# Apply boundary conditions
 # First domain boundary conditions
-L1[:: n + 1, :] = D2x[:: n + 1, :]  # Symmetry x = 0, xi = 1
-A1[:: n + 1, :] = 0
-f[: (n + 1) ** 2 : n + 1] = 0
-L1[1 :: n + 1, :] = Dy[:: n + 1, :]
-A1[1 :: n + 1, :] = 0
-f[1 : (n + 1) ** 2 : n + 1] = 0  # ((c + 1) ** 2 - 4) / 16
-
-L1[: n + 1, :] = np.eye(n + 1, (n + 1) ** 2)  # Interface y = 1, eta = 1
-A1[: n + 1, :] = 0
-f[: n + 1] = 0
-L1[n + 1 : 2 * (n + 1), :] = D2y[: n + 1, :]
+L1[n + 1 : 2 * (n + 1), :] = D2y[: n + 1, :]  # Interface y = 1, eta = 1
 A1[n + 1 : 2 * (n + 1), :] = 0
-f[n + 1 : 2 * (n + 1)] = 1 / 4
+f1[n + 1 : 2 * (n + 1)] = 1 / 4
 
-L1[(n + 1) * n :, :] = Dx[(n + 1) * n :, :]  # Symmetry y = 0, eta = -1
-A1[(n + 1) * n :, :] = 0
-f[(n + 1) * n : (n + 1) ** 2] = 0
-L1[(n + 1) * (n - 1) : (n + 1) * n, :] = D2y[(n + 1) * n :, :]
-A1[(n + 1) * (n - 1) : (n + 1) * n, :] = 0
-f[(n + 1) * (n - 1) : (n + 1) * n] = 0
+L1[block_len - 2 * (n + 1) : block_len - (n + 1), :] = D2y[
+    block_len - (n + 1) :, :
+]  # Symmetry y = 0, eta = -1
+A1[block_len - 2 * (n + 1) : block_len - (n + 1), :] = 0
+f1[block_len - 2 * (n + 1) : block_len - (n + 1)] = 0
+
+L1[:: n + 1, :] = Dxy[:: n + 1, :]  # Symmetry x = 0, xi = 1
+A1[:: n + 1, :] = 0
+f1[:: n + 1] = 0
+
+L1[1 :: n + 1, :] = D2x[:: n + 1, :]  # Symmetry x = 0, xi = 1
+A1[1 :: n + 1, :] = 0
+f1[1 :: n + 1] = 0
+
+L1[block_len - (n + 1) :, :] = Dxy[
+    block_len - (n + 1) :, :
+]  # Symmetry y = 0, eta = -1
+A1[block_len - (n + 1) :, :] = 0
+f1[block_len - (n + 1) :] = 0
 
 # Second domain boundary conditions
-L2[n :: n + 1, :] = D2x[n :: n + 1, :]  # Symmetry x = -L/2, xi = -1
+L2[block_len - 2 * (n + 1) : block_len - (n + 1), :] = D2y[
+    block_len - (n + 1) :, :
+]  # Symmetry y = 0, eta = -1
+A2[block_len - 2 * (n + 1) : block_len - (n + 1), :] = 0
+f2[block_len - 2 * (n + 1) : block_len - (n + 1)] = 0
+
+L2[n :: n + 1, :] = Dxy[n :: n + 1, :]  # Symmetry x = -L/2, xi = -1
 A2[n :: n + 1, :] = 0
-f[(n + 1) ** 2 + n :: n + 1] = 0
-L2[n - 1 :: n + 1, :] = Dy[n :: n + 1, :]
+f2[n :: n + 1] = 0
+
+L2[n - 1 :: n + 1, :] = D2x[n :: n + 1, :]  # Symmetry x = -L/2, xi = -1
 A2[n - 1 :: n + 1, :] = 0
-f[(n + 1) ** 2 + n - 1 :: n + 1] = 0  # ((c + 1) ** 2 - 4) / 16
+f2[n - 1 :: n + 1] = 0
 
-L2[: n + 1, :] = np.eye(n + 1, (n + 1) ** 2)  # No-slip y = 1, eta = 1
-A2[: n + 1, :] = 0
-f[(n + 1) ** 2 : (n + 1) * (n + 2)] = 0
-L2[n + 1 : 2 * (n + 1), :] = Dy[: n + 1, :]
+L2[n + 1 : 2 * (n + 1), :] = Dy[: n + 1, :]  # No flow y = 1, eta = 1
 A2[n + 1 : 2 * (n + 1), :] = 0
-f[(n + 1) * (n + 2) : (n + 1) * (n + 3)] = 0
+f2[n + 1 : 2 * (n + 1)] = 0
 
-L2[(n + 1) * n :, :] = Dx[(n + 1) * n :, :]  # Symmetry y = 0, eta = -1
-A2[(n + 1) * n :, :] = 0
-f[(n + 1) * (2 * n + 1) :] = 0
-L2[(n + 1) * (n - 1) : (n + 1) * n, :] = D2y[(n + 1) * n :, :]
-A2[(n + 1) * (n - 1) : (n + 1) * n, :] = 0
-f[(n + 1) * 2 * n : (n + 1) * (2 * n + 1)] = 0
+L2[block_len - (n + 1) :, :] = Dxy[
+    block_len - (n + 1) :, :
+]  # Symmetry y = 0, eta = -1
+A2[block_len - (n + 1) :, :] = 0
+f2[block_len - (n + 1) :] = 0
+
+# Link the domains
+L1[n :: n + 1, :] = (1 / l) * Dx[
+    n :: n + 1, :
+]  # Shared boundary x = -l/2, xi = -1, 1
+A1[n :: n + 1, :] = -(1 / (L - l)) * Dx[:: n + 1, :]
+f1[n :: n + 1] = 0
+
+L2[1 :: n + 1, :] = (1 / (L - l)) ** 2 * D2x[
+    :: n + 1, :
+]  # Shared boundary x = -l/2, xi = -1, 1
+A2[1 :: n + 1, :] = -((1 / l) ** 2) * D2x[n :: n + 1, :]
+f2[1 :: n + 1] = 0
+
+L2[:: n + 1, :] = 0  # Shared boundary x = -l/2, xi = -1, 1
+A2[:: n + 1, :] = 0
+L2[:: n + 1, :: n + 1] = np.eye(n + 1)
+A2[:: n + 1, n :: n + 1] = -np.eye(n + 1)
+f2[:: n + 1] = 0
+
+# Streamfunction condition
+L1[: n + 1, :] = np.eye(n + 1, (n + 1) ** 2)  # Streamfunction y = 1, eta = 1
+A1[: n + 1, :] = 0
+f1[: n + 1] = 0
+
+L2[: n + 1, :] = np.eye(n + 1, (n + 1) ** 2)  # Streamfunction y = 1, eta = 1
+A2[: n + 1, :] = 0
+f2[: n + 1] = 0
 
 # Solve the system
 L_complete = np.block([[L1, A1], [A2, L2]])
+f = np.concatenate([f1, f2])
 psi = np.linalg.solve(L_complete, f)
 
 plt.spy(L_complete)
 plt.show()
 
 # Convert streamfunction to velocities
-u = np.concatenate(
-    [2 * Dy @ psi[: (n + 1) ** 2], 2 * Dy @ psi[(n + 1) ** 2 :]]
-)
+pois = (1 - yy**2) / 2
+u = np.concatenate([2 * Dy @ psi[:block_len], 2 * Dy @ psi[block_len:]])
 v = np.concatenate(
-    [
-        -(4 / l) * Dx @ psi[: (n + 1) ** 2],
-        -(4 / (L - l)) * Dx @ psi[(n + 1) ** 2 :],
-    ]
+    [-(4 / l) * Dx @ psi[:block_len], -(4 / (L - l)) * Dx @ psi[block_len:]]
 )
 
 # Reshape to get solution grids
-uu = u.reshape((2 * (n + 1), n + 1))
+uu = u.reshape((2 * (n + 1), n + 1)) + pois
 vv = v.reshape((2 * (n + 1), n + 1))
 psi = psi.reshape((2 * (n + 1), n + 1))
 uu_std = np.hstack((uu[: n + 1, :], uu[n + 1 :, :]))
