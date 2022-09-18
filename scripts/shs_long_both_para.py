@@ -25,6 +25,10 @@ D, c = cheb(n)
 alpha = (l * (1 / 4 - (c - 1) ** 2 / 16) * np.tan(mu) + 1) ** -1
 alphaf = np.tile(alpha, n + 1)
 
+xi, eta = np.meshgrid(c, c)
+xif = xi.flatten()
+etaf = eta.flatten()
+
 x1 = l / 4 * (c - 1)
 x2 = ((L - l) * c - l - L) / 4
 
@@ -42,11 +46,6 @@ yy_std = np.hstack((yy1, yy2))
 xx = np.vstack((xx1, xx2))
 yy = np.vstack((yy1, yy2))
 
-x1f = xx1.flatten()
-y1f = yy1.flatten()
-x2f = xx2.flatten()
-y2f = yy2.flatten()
-
 xf = xx.flatten()
 yf = yy.flatten()
 
@@ -62,13 +61,13 @@ D2y = np.kron(D2, np.eye(n + 1))
 
 L1 = (
     16 / l**2 * D2x
-    + (4 / l) * np.tan(mu) * np.diag((x1f - 1) * (y1f + 1) * alphaf) @ Dxy
+    + (4 / l) * np.tan(mu) * np.diag((xif - 1) * (etaf + 1) * alphaf) @ Dxy
     + (np.tan(mu) ** 2 / 2)
-    * np.diag((x1f - 1) ** 2 * (y1f + 1) * alphaf**2)
+    * np.diag((xif - 1) ** 2 * (etaf + 1) * alphaf**2)
     @ D2y
-    + (2 / l) * np.tan(mu) * np.diag((y1f + 1) * alphaf) @ Dy
+    + (2 / l) * np.tan(mu) * np.diag((etaf + 1) * alphaf) @ Dy
     + (np.tan(mu) ** 2 / 4)
-    * np.diag((x1f - 1) ** 2 * (y1f + 1) ** 2 * alphaf**2)
+    * np.diag((xif - 1) ** 2 * (etaf + 1) ** 2 * alphaf**2)
     @ D2y
     + 4 * np.diag(alphaf**2) @ D2y
 )
