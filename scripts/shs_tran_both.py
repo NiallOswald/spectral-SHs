@@ -7,7 +7,7 @@ from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 
 # Setting parameters
 E = 2
-e = 1.5
+e = 1
 
 H = 1
 L = E / H
@@ -15,7 +15,7 @@ l = e / H  # noqa: E741
 delta = e / E
 
 # Construct the differentiation matrices
-n = 10
+n = 20
 block_len = (n + 1) ** 2
 D, c = cheb(n)
 
@@ -36,10 +36,10 @@ xf = xx.flatten()
 yf = yy.flatten()
 
 interior = (
-    (xf <= 0)
-    & (xf >= -L / 2)
-    & (yf <= 1)
-    & (yf >= 0)
+    (xf <= x[1])
+    & (xf >= x[-2])
+    & (yf <= y[1])
+    & (yf >= y[-2])
     & (xf != x[n])
     & (xf != x[n + 1])
 )
@@ -55,6 +55,9 @@ D2x = np.kron(np.eye(n + 1), D2)
 D2y = np.kron(D2, np.eye(n + 1))
 
 D2x2y = D2x @ D2y
+
+D3 = D2 @ D
+D3x = np.kron(np.eye(n + 1), D3)
 
 D4 = D2 @ D2
 D4x = np.kron(np.eye(n + 1), D4)
@@ -77,28 +80,7 @@ L2 = (
     + 2**4 * D4y
 )
 
-# Interlace the domains along the shared boundary
-L1[n :: n + 1, :] = (1 / l) * Dxy[n :: n + 1, :]  # u smoothness at x = -l/2
-A1[n :: n + 1, :] = -(1 / (L - l)) * Dxy[2 :: n + 1, :]
-f1[n :: n + 1] = 0
-
-L1[n - 1 :: n + 1, :] = (1 / l) * Dx[
-    n - 1 :: n + 1, :
-]  # v equality at x = -l/2
-A1[n - 1 :: n + 1, :] = -(1 / (L - l)) * Dx[1 :: n + 1, :]
-f1[n - 1 :: n + 1] = 0
-
-L2[:: n + 1, :] = (1 / (L - l)) ** 2 * D2x[
-    1 :: n + 1, :
-]  # v smoothness at x = -l/2
-A2[:: n + 1, :] = -((1 / l) ** 2) * D2x[n - 1 :: n + 1, :]
-f2[:: n + 1] = 0
-
-# First domain boundary conditions
-L1[: n + 1, :] = D2y[n + 1 : 2 * (n + 1), :]  # Interface y = 1, eta = 1
-A1[: n + 1, :] = 0
-f1[: n + 1] = 1 / (4 * eps**2)
-
+# Symmetry conditions
 L1[-2 * (n + 1) : -(n + 1), :] = D2y[
     -2 * (n + 1) : -(n + 1), :
 ]  # Symmetry y = 0, eta = -1
@@ -113,14 +95,9 @@ L1[1 :: n + 1, :] = D2x[1 :: n + 1, :]  # Symmetry x = 0, xi = 1
 A1[1 :: n + 1, :] = 0
 f1[1 :: n + 1] = 0
 
-L1[:: n + 1, :] = Dxy[1 :: n + 1, :]  # Symmetry x = 0, xi = 1
+L1[:: n + 1, :] = Dx[1 :: n + 1, :]  # Symmetry x = 0, xi = 1
 A1[:: n + 1, :] = 0
 f1[:: n + 1] = 0
-
-# Second domain boundary conditions
-L2[: n + 1, :] = Dy[n + 1 : 2 * (n + 1), :]  # No-flow y = 1, eta = 1
-A2[: n + 1, :] = 0
-f2[: n + 1] = 0
 
 L2[-2 * (n + 1) : -(n + 1), :] = D2y[
     -2 * (n + 1) : -(n + 1), :
@@ -136,12 +113,34 @@ L2[n - 1 :: n + 1, :] = D2x[n - 1 :: n + 1, :]  # Symmetry x = -L/2, xi = -1
 A2[n - 1 :: n + 1, :] = 0
 f2[n - 1 :: n + 1] = 0
 
-L2[n :: n + 1, :] = Dxy[n - 1 :: n + 1, :]  # Symmetry x = -L/2, xi = -1
+L2[n :: n + 1, :] = Dx[n - 1 :: n + 1, :]  # Symmetry x = -L/2, xi = -1
 A2[n :: n + 1, :] = 0
 f2[n :: n + 1] = 0
 
-# Final interlacing condition
-L2[1 :: n + 1, :] = 0  # u equality at x = -l/2
+# Interlace the domains along the shared boundary
+L1[n - 1 :: n + 1, :] = (1 / l) ** 3 * D3x[n - 1 :: n + 1, :]
+A1[n - 1 :: n + 1, :] = -((1 / (L - l)) ** 3) * D3x[1 :: n + 1, :]
+f1[n - 1 :: n + 1] = 0
+
+L1[n :: n + 1, :] = (1 / l) * Dx[n - 1 :: n + 1, :]
+A1[n :: n + 1, :] = -(1 / (L - l)) * Dx[1 :: n + 1, :]
+f1[n :: n + 1] = 0
+
+L2[:: n + 1, :] = (1 / (L - l)) ** 2 * D2x[1 :: n + 1, :]
+A2[:: n + 1, :] = -((1 / l) ** 2) * D2x[n - 1 :: n + 1, :]
+f2[:: n + 1] = 0
+
+# Top boundary conditions
+L1[: n + 1, :] = D2y[n + 1 : 2 * (n + 1), :]  # Interface y = 1, eta = 1
+A1[: n + 1, :] = 0
+f1[: n + 1] = 1 / (4 * eps**2)
+
+L2[: n + 1, :] = Dy[n + 1 : 2 * (n + 1), :]  # No-flow y = 1, eta = 1
+A2[: n + 1, :] = 0
+f2[: n + 1] = 0
+
+# Final interlacing conditions
+L2[1 :: n + 1, :] = 0
 A2[1 :: n + 1, :] = 0
 L2[1 :: n + 1, 1 :: n + 1] = np.eye(n + 1)
 A2[1 :: n + 1, n - 1 :: n + 1] = -np.eye(n + 1)
@@ -201,7 +200,13 @@ psi_std = np.hstack((psi[: n + 1, :], psi[n + 1 :, :]))
 
 # Plot the solution
 fig, ax = plt.subplots(figsize=(6, 6))
-plt.quiver(xx_std_i, yy_std_i, uu_std, vv_std, scale_units="xy")
+plt.quiver(
+    xx_std_i * H,
+    yy_std_i * H,
+    uu_std * H**2,
+    vv_std * H**2,
+    scale_units="xy",
+)
 plt.xlabel("x")
 plt.ylabel("y")
 plt.title("Velocity field")
@@ -211,7 +216,12 @@ plt.show()
 fig = plt.figure(figsize=(6, 6))
 ax = fig.add_subplot(projection="3d")
 ax.plot_surface(
-    xx_std_i, yy_std_i, uu_std, rstride=1, cstride=1, cmap="viridis"
+    xx_std_i * H,
+    yy_std_i * H,
+    uu_std * H**2,
+    rstride=1,
+    cstride=1,
+    cmap="viridis",
 )
 ax.set_xlabel("$x$")
 ax.set_ylabel("$y$")
@@ -223,7 +233,12 @@ plt.show()
 fig = plt.figure(figsize=(6, 6))
 ax = fig.add_subplot(projection="3d")
 ax.plot_surface(
-    xx_std_i, yy_std_i, vv_std, rstride=1, cstride=1, cmap="viridis"
+    xx_std_i * H,
+    yy_std_i * H,
+    vv_std * H**2,
+    rstride=1,
+    cstride=1,
+    cmap="viridis",
 )
 ax.set_xlabel("$x$")
 ax.set_ylabel("$y$")
@@ -235,7 +250,12 @@ plt.show()
 fig = plt.figure(figsize=(6, 6))
 ax = fig.add_subplot(projection="3d")
 ax.plot_surface(
-    uu_std, xx_std_i, yy_std_i, rstride=1, cstride=1, cmap="viridis"
+    uu_std * H**2,
+    xx_std_i * H,
+    yy_std_i * H,
+    rstride=1,
+    cstride=1,
+    cmap="viridis",
 )
 ax.set_xlabel("$u$")
 ax.set_ylabel("$x$")
